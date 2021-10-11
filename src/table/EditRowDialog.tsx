@@ -1,34 +1,51 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from "@material-ui/core";
-import { blue } from "@material-ui/core/colors";
+import { Button, Dialog, DialogActions, DialogContent,  DialogTitle, TextField } from '@mui/material';
+import _ from 'lodash';
+import { useEffect, useState } from "react";
 
-interface Props {
+interface Props<T> {
   onClose: () => any;
-  row: object[];
+  onSave: (row: T) => any;
+  row: T;
   open: boolean;
 }
 
-const EditRowDialog = ({ onClose, row, open }: Props) => {
+const EditRowDialog = <T extends Record<string, unknown>, >({ onClose, onSave, row: rowInput, open }: Props<T>) => {
+  const [row, setRow] = useState({...rowInput});
+
+  useEffect(() => {
+    setRow({ ...rowInput });
+  }, [rowInput]);
+
   const handleClose = () => {
     onClose();
+  };
+
+  const onValueChange = (value: string, key: string) => {
+    setRow({...row, [key]: value });
   };
 
   return (
     <Dialog onClose={handleClose} open={open}>
       <DialogTitle>Edit Row</DialogTitle>
       <DialogContent>
-        <TextField
-          autoFocus
-          margin="dense"
-          id="name"
-          label="Email Address"
-          type="email"
-          fullWidth
-          variant="standard"
-        />
+        {_.keys(row).map((key, index) => {
+          return (<TextField
+            key={index}
+            autoFocus
+            margin="dense"
+            id="name"
+            label={key}
+            fullWidth
+            variant="standard"
+            value={row[key]}
+            onChange={event => onValueChange(event.target.value, key)}
+          />);
+        })}
+
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Save</Button>
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={() => onSave(row)}>Save</Button>
+        <Button onClick={onClose}>Cancel</Button>
       </DialogActions>
     </Dialog>
   );
