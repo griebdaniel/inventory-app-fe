@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState, Fragment } from 'react';
-import { Cell, CellProps, Column, ColumnInstance, HeaderProps, TableHeaderProps, useRowSelect, useSortBy, useTable } from 'react-table';
+import { Cell, CellProps, Column, ColumnInstance, HeaderProps, IdType, Row, TableHeaderProps, useGlobalFilter, useRowSelect, useSortBy, useTable } from 'react-table';
 import EditRowDialog from './EditRowDialog';
 
 import { alpha, Box, darken, flexbox } from '@mui/system';
@@ -16,21 +16,28 @@ import zIndex from '@mui/material/styles/zIndex';
 import _ from 'lodash';
 
 
-interface DataTableProps<T extends Record<string, unknown>> {
-  data: T[];
-  columns: Column<T>[],
-  title: string,
-  updateMyData: (rowIndex: number, columnId: string, value: any) => void
-}
+
 
 interface EnhancedTableToolbarProps {
   numSelected: number;
   title: string;
   onEdit: () => void;
+  onFilterChange: (value: string) => void;
 }
 
 const EnhancedTableToolbar = (props: EnhancedTableToolbarProps) => {
-  const { numSelected, title, onEdit } = props;
+  const { numSelected, title, onEdit, onFilterChange } = props;
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterValue, setFilterValue] = useState('');
+
+  const toggleFilter = () => {
+    setFilterOpen(!filterOpen);
+  };
+
+  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterValue(event.target.value);
+    onFilterChange(event.target.value);
+  };
 
   return (
     <Toolbar
@@ -55,16 +62,22 @@ const EnhancedTableToolbar = (props: EnhancedTableToolbarProps) => {
         >
           {numSelected} selected
         </Typography>
-      ) : (
-        <Typography
-          sx={{ flex: '1 1 100%' }}
-          variant="h6"
-          id="tableTitle"
-          component="div"
-        >
-          {title}
-        </Typography>
-      )}
+      ) :
+        <Box sx={{ flex: '1 1 100%' }}>
+          {filterOpen ? (
+            <TextField label="Filter" variant="standard" value={filterValue} onChange={handleFilterChange}>
+            </TextField>
+          ) : (
+            <Typography
+              variant="h6"
+              id="tableTitle"
+              component="div"
+            >
+              {title}
+            </Typography>
+          )}
+        </Box>
+      }
       {numSelected > 0 ? (
         <Fragment>
           {numSelected === 1 &&
@@ -84,7 +97,7 @@ const EnhancedTableToolbar = (props: EnhancedTableToolbarProps) => {
             <Add />
           </IconButton>
           <Tooltip title="Filter list">
-            <IconButton>
+            <IconButton onClick={toggleFilter}>
               <FilterListIcon />
             </IconButton>
           </Tooltip>
@@ -148,10 +161,18 @@ const defaultColumn = {
   Cell: EditableCell,
 };
 
-const DataTable = <T extends Record<string, unknown>,>({ data, columns, title, updateMyData }: DataTableProps<T>) => {
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [currentRow, setCurretnRow] = useState<T>();
+interface DataTableProps<T extends Record<string, unknown>> {
+  data: T[];
+  columns: Column<T>[],
+  title: string,
+  updateMyData: (rowIndex: number, value: T) => void,
+  globalFilter: (rows: Row<T>[], ids: IdType<T>[], query: string) => Row<T>[]
+}
 
+const DataTable = <T extends Record<string, unknown>,>({ data, columns, title, updateMyData, globalFilter }: DataTableProps<T>) => {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const [currentRow, setCurretnRow] = useState<T>();
   const [editedCell, setEditedCell] = useState<Cell<T> | null>(null);
 
   const {
@@ -161,13 +182,17 @@ const DataTable = <T extends Record<string, unknown>,>({ data, columns, title, u
     rows,
     prepareRow,
     selectedFlatRows,
+    toggleRowSelected,
+    setGlobalFilter,
     state: { selectedRowIds }
   } = useTable<T>({
+    globalFilter,
     columns,
     data,
     defaultColumn,
     updateMyData
   },
+    useGlobalFilter,
     useSortBy,
     useRowSelect,
     hooks => {
@@ -186,46 +211,30 @@ const DataTable = <T extends Record<string, unknown>,>({ data, columns, title, u
     }
   );
 
-  const isCellEdited = (cell: Cell<T>) => {
-    return cell.column.id === editedCell?.column.id && cell.row.id === editedCell.row.id;
-  };
-
-  const openEditRowDialog = (row: T) => {
-    // setCurretnRow({ ...row });
-    // setIsEditDialogOpen(true);
-  };
-
   const onCellClick = (cell: Cell<T>) => {
-    // console.log(cell, editedCell);
-    if (cell.column.id === 'selection') {
-      return;
-    }
-    // if (cell.column.id === editedCell?.column.id && cell.row.id === editedCell.row.id) {
-    //   console.log('equals');
-    // }
-    // if (editedCell === null) {
-
-    // }
-    setEditedCell({ ...cell });
+    toggleRowSelected(cell.row.id);
   };
 
-  const onSave = (value: any) => {
-    if (editedCell) {
-      updateMyData(editedCell.row.index, editedCell.column.id, value);
-    }
-    setEditedCell(null);
+  const onEditRowCancel = () => {
+    setIsEditDialogOpen(false);
   };
 
-  const onClose = () => {
-    setEditedCell(null);
+  const onSaveRow = (row: T) => {
+    console.log(row);
+    setIsEditDialogOpen(false);
+    updateMyData(selectedFlatRows[0].index, row);
+  };
+
+  const handleFilterChange = (value: string) => {
+    setGlobalFilter(value);
   };
 
   return (
     <Fragment>
       <Box sx={{ width: '100%' }}>
         <Paper sx={{ width: '100%', mb: 2 }}>
-          <EnhancedTableToolbar numSelected={selectedFlatRows.length} title={title} onEdit={() => setIsEditDialogOpen(true)} />
-          <EditRowDialog onClose={() => setIsEditDialogOpen(false)} onSave={newRow => console.log(newRow)} row={currentRow as any} open={isEditDialogOpen}></EditRowDialog>
+          <EnhancedTableToolbar numSelected={selectedFlatRows.length} title={title} onEdit={() => setIsEditDialogOpen(true)} onFilterChange={handleFilterChange} />
+          <EditRowDialog onCancel={() => setIsEditDialogOpen(false)} onSave={onSaveRow} row={selectedFlatRows[0]?.original} open={isEditDialogOpen}></EditRowDialog>
           <TableContainer component={Paper}>
             <Table {...getTableProps()} >
               <TableHead>
@@ -252,20 +261,11 @@ const DataTable = <T extends Record<string, unknown>,>({ data, columns, title, u
                 {rows.map((row, i) => {
                   prepareRow(row);
                   return (
-                    <TableRow onClick={() => openEditRowDialog(row.original)} {...row.getRowProps()} selected={row.isSelected}>
+                    <TableRow {...row.getRowProps()} selected={row.isSelected}>
                       {row.cells.map(cell => {
                         return (
                           <TableCell sx={{ cursor: 'pointer', position: 'relative' }} onClick={() => onCellClick(cell)} {...cell.getCellProps()}>
-                            {isCellEdited(cell) &&
-                              <ClickAwayListener onClickAway={() => setEditedCell(null)}>
-                                <Paper sx={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}>
-                                  <Box elevation={4} component={Paper} sx={{ p: 3, position: 'fixed', width: 140, bgcolor: darken('#ffff', 0.02) }}>
-                                    {cell.render('Cell', { opened: isCellEdited(cell), onSave, onClose })}
-                                  </Box>
-                                </Paper>
-                              </ClickAwayListener>
-                            }
-                            {cell.render('Cell', { opened: false, onSave, onClose })}
+                            {cell.render('Cell')}
                           </TableCell>);
                       })}
                     </TableRow>

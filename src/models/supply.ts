@@ -1,4 +1,4 @@
-interface Supply {
+type Supply = {
   name: string;
   quantity: number;
   unit: string;

@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { Column } from "react-table";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Column, IdType, Row } from "react-table";
 import Supply from "../../models/supply";
 import DataTable from "../../table/Table";
 
+// import _ from 'lodash';
+
 const SupplyEditor = (props: any) => {
-  const [supplies, setSupplies] = useState<Supply[]>();
+  const [supplies, setSupplies] = useState<Array<Supply>>();
 
 
   useEffect(() => {
@@ -16,21 +18,30 @@ const SupplyEditor = (props: any) => {
     ]);
   }, []);
 
-  const columns = useMemo<Column<any>[]>(() => [
+  const columns = useMemo<Column<Supply>[]>(() => [
     { Header: 'Name', accessor: 'name', },
     { Header: 'Quantity', accessor: 'quantity' },
     { Header: 'Unit', accessor: 'unit', disableSortBy: true  }
   ], []);
 
+  const globalFilterFunction = useCallback(
+    (rows: Row<Supply>[], ids: IdType<Supply>[], query: string) => {
+        console.log(query);
+        return rows.filter((row) => 
+          row.original.name.includes(query)  
+        );
+    },
+    [],
+);
 
-  const updateMyData = (rowIndex: number, columnId: string, value: any) => {
+
+  const updateMyData = (rowIndex: number, value: Supply) => {
     // We also turn on the flag to not reset the page
     setSupplies(old =>
       old?.map((row, index) => {
         if (index === rowIndex) {
           return {
-            ...old[rowIndex],
-            [columnId]: value,
+            ...value
           };
         }
         return row;
@@ -40,7 +51,7 @@ const SupplyEditor = (props: any) => {
 
   return (
     <div style={{ width: 400, margin: 20 }}>
-      {supplies && <DataTable title="Supplies" data={supplies!} columns={columns}  updateMyData={updateMyData}  />}
+      {supplies && <DataTable title="Supplies" data={supplies} columns={columns} globalFilter={globalFilterFunction}  updateMyData={updateMyData}  />}
     </div>
   );
 };

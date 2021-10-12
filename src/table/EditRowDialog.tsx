@@ -1,33 +1,29 @@
-import { Button, Dialog, DialogActions, DialogContent,  DialogTitle, TextField } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
 import _ from 'lodash';
 import { useEffect, useState } from "react";
 
 interface Props<T> {
-  onClose: () => any;
+  onCancel: () => any;
   onSave: (row: T) => any;
   row: T;
   open: boolean;
 }
 
-const EditRowDialog = <T extends Record<string, unknown>, >({ onClose, onSave, row: rowInput, open }: Props<T>) => {
-  const [row, setRow] = useState({...rowInput});
+const EditRowDialog = <T extends Record<string, unknown>,>({ onCancel, onSave, row: rowInput, open }: Props<T>) => {
+  const [row, setRow] = useState({ ...rowInput });
 
   useEffect(() => {
     setRow({ ...rowInput });
   }, [rowInput]);
 
-  const handleClose = () => {
-    onClose();
-  };
-
   const onValueChange = (value: string, key: string) => {
-    setRow({...row, [key]: value });
+    setRow({ ...row, [key]: value });
   };
 
   return (
-    <Dialog onClose={handleClose} open={open}>
+    <Dialog onClose={onCancel} open={open}>
       <DialogTitle>Edit Row</DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {_.keys(row).map((key, index) => {
           return (<TextField
             key={index}
@@ -41,11 +37,10 @@ const EditRowDialog = <T extends Record<string, unknown>, >({ onClose, onSave, r
             onChange={event => onValueChange(event.target.value, key)}
           />);
         })}
-
       </DialogContent>
       <DialogActions>
+        <Button onClick={onCancel}>Cancel</Button>
         <Button onClick={() => onSave(row)}>Save</Button>
-        <Button onClick={onClose}>Cancel</Button>
       </DialogActions>
     </Dialog>
   );
