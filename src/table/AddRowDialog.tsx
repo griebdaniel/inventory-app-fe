@@ -4,20 +4,22 @@ import React, { useEffect, useState } from "react";
 
 interface Props<T> {
   onCancel: () => any;
-  onSave: (row: T) => any;
-  row: T;
+  onAdd: (row: T) => any;
+  defaultValues: T;
   open: boolean;
 }
 
-const EditRowDialog = <T extends Record<string, unknown>,>({ onCancel, onSave, row: rowInput, open }: Props<T>) => {
-  const [row, setRow] = useState({ ...rowInput });
+const AddRowDialog = <T extends Record<string, unknown>>({ onCancel, onAdd, defaultValues, open }: Props<T>) => {
+  const [row, setRow] = useState(defaultValues);
 
-  useEffect(() => {
-    setRow({ ...rowInput });
-  }, [rowInput]);
+  console.log(defaultValues);
 
   const handleValueChange = (key: string) => ({ target: { value } }: React.ChangeEvent<HTMLInputElement>) => {
     setRow({ ...row, [key]: value });
+  };
+
+  const handleAdd = () => {
+    onAdd(row);
   };
 
   return (
@@ -40,10 +42,10 @@ const EditRowDialog = <T extends Record<string, unknown>,>({ onCancel, onSave, r
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>Cancel</Button>
-        <Button onClick={() => onSave(row)}>Save</Button>
+        <Button onClick={handleAdd}>Add</Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-export default EditRowDialog;
+export default AddRowDialog;

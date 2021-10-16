@@ -1,7 +1,7 @@
 type Supply = {
   name: string;
   quantity: number;
-  unit: string;
+  unit: string; 
 }
 
 export default Supply;

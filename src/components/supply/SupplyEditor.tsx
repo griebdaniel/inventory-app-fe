@@ -2,20 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Column, IdType, Row } from "react-table";
 import Supply from "../../models/supply";
 import DataTable from "../../table/Table";
+import getSupplies from "./makeSupplies";
 
 // import _ from 'lodash';
-
+// { name: 'aluminium', quantity: 2, unit: 'dkg' },
+// { name: 'iron', quantity: 3, unit: 'g' },
+// { name: 'szilver', quantity: 6, unit: 'kg' },
+// { name: 'gold', quantity: 4, unit: 'piece' }
 const SupplyEditor = (props: any) => {
   const [supplies, setSupplies] = useState<Array<Supply>>();
 
-
   useEffect(() => {
-    setSupplies([
-      { name: 'aluminium', quantity: 2, unit: 'dkg' },
-      { name: 'iron', quantity: 3, unit: 'g' },
-      { name: 'szilver', quantity: 6, unit: 'kg' },
-      { name: 'gold', quantity: 4, unit: 'piece' }
-    ]);
+    setSupplies(getSupplies(150));
   }, []);
 
   const columns = useMemo<Column<Supply>[]>(() => [
@@ -50,7 +48,7 @@ const SupplyEditor = (props: any) => {
   };
 
   return (
-    <div style={{ width: 400, margin: 20 }}>
+    <div style={{ width: 600, margin: 20 }}>
       {supplies && <DataTable title="Supplies" data={supplies} columns={columns} globalFilter={globalFilterFunction}  updateMyData={updateMyData}  />}
     </div>
   );
